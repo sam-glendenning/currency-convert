@@ -1,44 +1,44 @@
 import React from "react";
 import "./App.css";
 import { TextField, Button } from "@mui/material";
-import { useCurrencyRates } from "./requests";
+import { type CurrencyRates, useCurrencyRates } from "./requests";
 
 const App = (): React.ReactElement => {
   const [apiKey, setApiKey] = React.useState<string>("");
-  const [currencyValue, setCurrencyValue] = React.useState<number>(0);
-  const [convertedValue, setConvertedValue] = React.useState<
-    number | undefined
+  const [currencyRates, setCurrencyRates] = React.useState<
+    CurrencyRates["data"] | undefined
   >(undefined);
+  const [convertedValue, setConvertedValue] = React.useState<number>(0);
   const [enabled, setEnabled] = React.useState<boolean>(false);
 
-  const { data, isLoading } = useCurrencyRates(apiKey, enabled);
+  const { data, isLoading, isError } = useCurrencyRates(apiKey, enabled);
 
   const handleAPIKeyChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     setApiKey(e.target.value);
   };
 
-  const handleCurrencyValueChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ): void => {
-    setCurrencyValue(parseFloat(e.target.value));
-  };
-
-  const convert = (): void => {
+  const handleFetchCurrencyRates = (): void => {
     setEnabled(true);
   };
 
-  React.useEffect(() => {
-    if (data) {
-      if (!data?.data) {
-        console.log("nope");
-        return;
-      }
-      const usdRate = data.data.USD;
-      if (usdRate) {
-        setConvertedValue(currencyValue * usdRate);
-      }
+  const handleCurrencyValueChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ): void => {
+    const userCurrencyValue = parseFloat(e.target.value);
+    if (!isNaN(userCurrencyValue)) {
+      const usdRate = currencyRates!.USD;
+      setConvertedValue(userCurrencyValue * usdRate);
+    } else {
+      setConvertedValue(0);
     }
-  }, [currencyValue, data]);
+  };
+
+  React.useEffect(() => {
+    if (data?.data) {
+      setCurrencyRates(data.data);
+      setEnabled(false);
+    }
+  }, [data]);
 
   return (
     <div className="App">
@@ -46,13 +46,19 @@ const App = (): React.ReactElement => {
       <br />
       <p>Enter your API key</p>
       <TextField onChange={handleAPIKeyChange} />
+      <Button onClick={handleFetchCurrencyRates}>Fetch currency rates</Button>
 
-      <p>Enter GBP to receive USD</p>
-      <TextField onChange={handleCurrencyValueChange} />
+      {currencyRates && (
+        <div>
+          <p>Enter GBP to receive USD</p>
+          <TextField onChange={handleCurrencyValueChange} />
+          {convertedValue !== 0 ? <p>${convertedValue}</p> : <p>$0</p>}{" "}
+        </div>
+      )}
 
-      <Button onClick={() => convert()}>Convert</Button>
-
-      {convertedValue && <p>${convertedValue}</p>}
+      <br />
+      {enabled && isLoading && <p>Downloading currency rates...</p>}
+      {isError && <p>Unable to fetch currency rates!</p>}
     </div>
   );
 };

@@ -1,8 +1,12 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import {
+  useQuery,
+  type UseQueryResult,
+  type UseQueryOptions,
+} from "@tanstack/react-query";
 
 const url = "https://api.freecurrencyapi.com/v1/latest";
 
-interface CurrencyRates {
+export interface CurrencyRates {
   data: {
     [key: string]: number;
   };
@@ -10,7 +14,7 @@ interface CurrencyRates {
 
 export const useCurrencyRates = (
   apiKey: string,
-  enabled: boolean
+  enabled: UseQueryOptions["enabled"]
 ): UseQueryResult<CurrencyRates, Error> =>
   useQuery<CurrencyRates, Error, CurrencyRates, [string]>(
     ["currencyRates"],
@@ -18,5 +22,7 @@ export const useCurrencyRates = (
       const constructedUrl = `${url}?apikey=${apiKey}&currencies=USD&base_currency=GBP`;
       return fetch(constructedUrl).then((res) => res.json());
     },
-    { enabled }
+    {
+      enabled,
+    }
   );
